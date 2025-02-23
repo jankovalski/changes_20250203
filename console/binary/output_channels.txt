@@ -226,6 +226,27 @@ int16_t rpmAcceleration;dRPM;"RPM acceleration/Rate of Change/ROC",1, 0, 0, 5, 2
 	uint16_t turboSpeed;@@GAUGE_NAME_TURBO_SPEED@@;"hz",1, 0, 0, 0, 0
 
 	int16_t[MAX_CYLINDER_COUNT iterate] autoscale ignitionAdvanceCyl;Ign: Timing Cyl;"deg",{1/@@PACK_MULT_ANGLE@@}, 0, 0, 0, 1
+	
+	bit isAEActive;AE Active
+	bit egsGearShift;EGS: Gear Shift Active
+	bit egsProtection;EGS: Protection
+	bit ascIntervention; ASC: Intervention Active
+	uint8_t egsGear;EGS: Gear;"", 1, 0, 0, 0, 1
+	uint8_t egsGearTarget;EGS: Gear Target;"", 1, 0, 0, 0, 1
+	uint8_t egsConverterLockupClutch;EGS: Converter Lockup Clutch;"", 1, 0, 0, 0, 1
+	float egsReduction;EGS: Reduction;"", 1, 0, 0, 0, 2
+	float egsTimingMultiplier;EGS: Timing multiplier;"", 1, 0, 0, 0, 2
+	float egsTimingSparkSkip;EGS: Timing spark skip;"", 1, 0, 0, 0, 2
+	float egsEtbDrop;EGS: ETB Drop;"", 1, 0, 0, 0, 2
+	float ascReduction;ASC: Reduction;"", 1, 0, 0, 0, 2
+	float ascEtbDrop;ASC: ETB Drop;"", 1, 0, 0, 0, 2
+	bit isFanOn;Radiator Fan
+	bit isFan2On;Radiator Fan 2
+	
+	float vehicleSpeedFrontLeft;VSS: Front Left;"", 1, 0, 0, 0, 1
+	float vehicleSpeedFrontRight;VSS: Front Right;"", 1, 0, 0, 0, 1
+	float vehicleSpeedRearLeft;VSS: Rear Left;"", 1, 0, 0, 0, 1
+	float vehicleSpeedRearRight;VSS: Rear Right;"", 1, 0, 0, 0, 1
 
 ! fun fact: we have a separate pid_state.txt file for a bit of a different structure huh?
 	struct pid_status_s

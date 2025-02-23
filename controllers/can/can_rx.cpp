@@ -189,6 +189,8 @@ extern bool verboseRxCan;
 
 PUBLIC_API_WEAK void boardProcessCanRxMessage(const size_t busIndex, const CANRxFrame &frame, efitick_t nowNt) { }
 
+static uint8_t egsGearTemp = 0;
+
 void processCanRxMessage(const size_t busIndex, const CANRxFrame &frame, efitick_t nowNt) {
 	if ((engineConfiguration->verboseCan && busIndex == 0) || verboseRxCan) {
 		printPacket(busIndex, frame);
@@ -211,6 +213,50 @@ void processCanRxMessage(const size_t busIndex, const CANRxFrame &frame, efitick
 	}
 
 	processCanQcBenchTest(frame);
+	
+	if (CAN_SID(frame) == 0x43F)
+	{
+		egsGearTemp = frame.data8[0] & 0x07;
+		engine->outputChannels.egsGearShift = (frame.data8[0] & (1 << 3)) != 0;
+		if (engine->outputChannels.egsGearShift > 0)
+		{
+			engine->outputChannels.egsGearTarget = egsGearTemp;
+		}
+		else
+		{
+			engine->outputChannels.egsGear = egsGearTemp;
+			engine->outputChannels.egsGearTarget = 0;
+		}
+		engine->outputChannels.egsReduction = (0xFF - frame.data8[3]) * 0.00390625;
+		if (engine->outputChannels.egsReduction > 0)
+		{
+			engine->outputChannels.egsTimingMultiplier = interpolate3d(config->vvtTable1, config->vvtTable1LoadBins, getFuelingLoad(), config->vvtTable1RpmBins, engine->triggerCentral.instantRpm.getInstantRpm());
+			engine->outputChannels.egsTimingSparkSkip = interpolate3d(config->vvtTable2, config->vvtTable1LoadBins, getFuelingLoad(), config->vvtTable1RpmBins, engine->triggerCentral.instantRpm.getInstantRpm());
+		}
+		else
+		{
+			engine->outputChannels.egsTimingMultiplier = 1;
+			engine->outputChannels.egsTimingSparkSkip = 0;
+		}
+		engine->engineState.luaSoftSparkSkip = engine->outputChannels.egsTimingSparkSkip;
+		engine->engineState.updateSparkSkip();
+	}
+	if (CAN_SID(frame) == 0x1F0)
+	{
+		engine->outputChannels.vehicleSpeedFrontLeft = (getTwoBytesLsb(frame, 0) - 44) * 0.063003631;
+		engine->outputChannels.vehicleSpeedFrontRight = (getTwoBytesLsb(frame, 2) - 44) * 0.063003631;
+		engine->outputChannels.vehicleSpeedRearLeft = (getTwoBytesLsb(frame, 4) - 44) * 0.063003631;
+		engine->outputChannels.vehicleSpeedRearRight = (getTwoBytesLsb(frame, 6) - 44) * 0.063003631;
+	}
+	if (CAN_SID(frame) == 0x615)
+	{
+		engine->engineState.lua.acRequestState = (frame.data8[0] & (1 << 6)) != 0;
+	}
+	if (CAN_SID(frame) == 0x153)
+	{
+		engine->outputChannels.ascIntervention = (frame.data8[0] & (1 << 0)) != 0;
+		engine->outputChannels.ascReduction = (0xFF - frame.data8[3]) * 0.00390625;
+	}
 
 	processLuaCan(busIndex, frame);
 

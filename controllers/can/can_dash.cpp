@@ -82,34 +82,83 @@ void canDashboardGenesisCoupe(CanCycle cycle);
 void canDashboardAim(CanCycle cycle);
 void canDashboardHaltech(CanCycle cycle);
 
-//BMW Dashboard
-//todo: we use 50ms fixed cycle, trace is needed to check for correct period
-static void canDashboardBmwE46(CanCycle cycle) {
+//BMW Dash
+int rateOfChange = 0;
+float fuelConsumption = 0;
+static void canDashboardBmwE46(CanCycle cycle)
+{
+	static uint8_t values[] = {0x80, 0x11, 0x40, 0xE0};
+	static uint8_t currentIndex = 0;
+	static uint8_t count = 0;
 
-	if (cycle.isInterval(CI::_10ms)) {
+	if (cycle.isInterval(CI::_10ms))
+	{
 		{
-			CanTxMessage msg(CanCategory::NBC, CAN_BMW_E46_RPM);
-      msg[0] = 0x05; // ASC message
-      msg[1] = 0x0C; // Indexed Engine Torque in % of C_TQ_STND TBD
-			msg.setShortValue((int) (Sensor::getOrZero(SensorType::Rpm) * 6.4), 2);
-      msg[4] = 0x0C;
-      msg[5] = 0x15;
-      msg[6] = 0x00;
-      msg[7] = 0x35;
+			CanTxMessage msg(CanCategory::NBC, 0x316);
+			uint8_t load;
+			if (engineConfiguration->dynoMode) load = engineConfiguration->dynoModeTargetLoad;
+			else load = Sensor::getOrZero(SensorType::LuaGauge7);
+			msg[0] = 0x05;
+			msg[1] = load;
+			uint16_t rpm;
+			if (engineConfiguration->dynoMode) rpm = engineConfiguration->dynoModeTargetRpm;
+			else rpm = Sensor::getOrZero(SensorType::Rpm);
+			msg.setShortValue((rpm * 6.4), 2);
+			msg[4] = load;
+			msg[5] = 0x15;
+			msg[6] = 0x00;
+			msg[7] = 0x00;
 		}
 
 		{
-			CanTxMessage msg(CanCategory::NBC, CAN_BMW_E46_DME2);
-      msg[0] = 0x11;
-      msg[1] = (Sensor::getOrZero(SensorType::Clt) + 48.373) / 0.75;
-      msg[2] = 0x00; // baro sensor
-      msg[3] = 0x08;
-      msg[4] = 0x00; // TPS_VIRT_CRU_CAN, not used.
-      msg[5] = 0x00; // TPS out, but we set to 0 just in case.
-      msg[6] = 0x00; // brake system status Ok.
-      msg[7] = 0x00; // not used
+			CanTxMessage msg(CanCategory::NBC, 0x329);
+			msg[0] = values[currentIndex];
+			count++;
+			if (count >= 8)
+			{
+				count = 0;
+				currentIndex = (currentIndex + 1) % 4;
+			}
+			msg[1] = (Sensor::getOrZero(SensorType::Clt) + 48) / 0.75;
+			msg[2] = 0x00;
+			msg[3] = 0x00;
+			msg[4] = 0x00;
+			float tps;
+			if (engineConfiguration->dynoMode) tps = engineConfiguration->dynoModeTargetTps;
+			else tps = Sensor::getOrZero(SensorType::Tps1);
+			msg[5] = std::min(tps, static_cast<float>(99.2)) / 0.390625;
+			msg[6] = 0x00;
+			msg[7] = 0x00;
 		}
-  }
+
+		{
+			CanTxMessage msg(CanCategory::NBC, 0x545);
+			rateOfChange = Sensor::getOrZero(SensorType::LuaGauge8);
+			fuelConsumption = fuelConsumption + rateOfChange;
+			if (fuelConsumption > 65535)
+			{
+				fuelConsumption = fuelConsumption - 65536;
+			}
+			msg[0] = 0x00;
+			msg.setShortValue((int)(fuelConsumption), 1);
+			msg[3] = 0x00;
+			msg[4] = 0x00;
+			msg[5] = 0x00;
+			msg[6] = 0x00;
+			msg[7] = 0x00;
+		}
+		/*{
+			CanTxMessage msg(CanCategory::NBC, 0x600);
+			msg[0] = engine->outputChannels.oilTemp + 48;
+			msg[1] = engine->outputChannels.oilPressure / 10;
+			msg[2] = engine->outputChannels.lambdaValue * 147;
+			msg[3] = engine->outputChannels.VBatt * 10;
+			msg[4] = 0x00;
+			msg[5] = 0x00;
+			msg[6] = 0x00;
+			msg[7] = 0x00;
+		}*/
+	}
 }
 
 //todo: we use 50ms fixed cycle, trace is needed to check for correct period

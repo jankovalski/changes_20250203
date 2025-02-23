@@ -94,6 +94,14 @@ private:
 	efitimeus_t restoreAfterPidResetTimeUs = 0;
 	// used by 'dashpot' (hold+decay) logic for iacByTpsTaper
 	efitimeus_t lastTimeRunningUs = 0;
+	efitimeus_t lastGearAddUs = 0;
+	efitimeus_t lastFan1AddUs = 0;
+	efitimeus_t lastFan2AddUs = 0;
+	efitimeus_t lastAcAddUs = 0;
+	float gearIdleAdd = 0;
+	float fan1IdleAdd = 0;
+	float fan2IdleAdd = 0;
+	float acIdleAdd = 0;
 	// used by "soft" idle entry
 	float m_crankTaperEndTime = 0.0f;
 	float m_idleTimingSoftEntryEndTime = 0.0f;

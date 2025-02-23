@@ -195,8 +195,9 @@ public:
 	// todo: boolean sensors should leverage sensor framework #6342
 	SwitchedState clutchUpSwitchedState;
    	SwitchedState brakePedalSwitchedState;
+	SwitchedState etbPedalTargetSwitchedState;
    	SwitchedState acButtonSwitchedState;
-  SimpleSwitchedState luaDigitalInputState[LUA_DIGITAL_INPUT_COUNT];
+	SimpleSwitchedState luaDigitalInputState[LUA_DIGITAL_INPUT_COUNT];
 
 #if EFI_LAUNCH_CONTROL
 	LaunchControlBase launchController;
@@ -211,7 +212,7 @@ public:
 #endif // EFI_ANTILAG_SYSTEM
 
 #if EFI_ANTILAG_SYSTEM
-//	SoftSparkLimiter ALSsoftSparkLimiter;
+	SoftSparkLimiter ALSsoftSparkLimiter;
 #endif /* EFI_ANTILAG_SYSTEM */
 
 #if EFI_SHAFT_POSITION_INPUT

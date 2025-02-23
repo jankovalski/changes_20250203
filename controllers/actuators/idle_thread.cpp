@@ -100,15 +100,34 @@ float IdleController::getCrankingOpenLoop(float clt) const {
 	return engineConfiguration->crankingIACposition * mult;
 }
 
+float computeIdleAddition(float &idleAdd, efitimeus_t &lastAddUs, efitimeus_t nowUs, float extraIdle, float rampDown, float logicValue)
+{
+	float increment = 0.0f;
+	if (logicValue > 0 && extraIdle > 0)
+	{
+		idleAdd = extraIdle;
+		increment = idleAdd;
+		lastAddUs = nowUs;
+	}
+	else
+	{
+		float timeSinceLastUpdateSecs = static_cast<float>(nowUs - lastAddUs) / US_PER_SECOND_F;
+		if (timeSinceLastUpdateSecs > 0)
+		{
+			float decrement = timeSinceLastUpdateSecs * (extraIdle / rampDown);
+			idleAdd -= decrement;
+			if (idleAdd < 0) idleAdd = 0;
+			increment = idleAdd;
+			lastAddUs = nowUs;
+		}
+	}
+	return increment;
+}
+
 percent_t IdleController::getRunningOpenLoop(IIdleController::Phase phase, float rpm, float clt, SensorResult tps) {
 	float running =
 		engineConfiguration->manIdlePosition		// Base idle position (slider)
 		* interpolate2d(clt, config->cltIdleCorrBins, config->cltIdleCorr);
-
-	// Now we bump it by the AC/fan amount if necessary
-	running += engine->module<AcController>().unmock().acButtonState ? engineConfiguration->acIdleExtraOffset : 0;
-	running += enginePins.fanRelay.getLogicValue() ? engineConfiguration->fan1ExtraIdle : 0;
-	running += enginePins.fanRelay2.getLogicValue() ? engineConfiguration->fan2ExtraIdle : 0;
 
 	running += luaAdd;
 
@@ -150,6 +169,11 @@ if (engine->antilagController.isAntilagCondition) {
 		rpm);
 
 	running += iacByRpmTaper;
+	
+	running += computeIdleAddition(gearIdleAdd, lastGearAddUs, nowUs, engineConfiguration->gearEngageIdleAdder, engineConfiguration->gearEngageRampDown, engine->outputChannels.egsGear);
+	running += computeIdleAddition(fan1IdleAdd, lastFan1AddUs, nowUs, engineConfiguration->fan1ExtraIdle, 2.0, enginePins.fanRelay.getLogicValue());
+	running += computeIdleAddition(fan2IdleAdd, lastFan2AddUs, nowUs, engineConfiguration->fan2ExtraIdle, 2.0, enginePins.fanRelay2.getLogicValue());
+	running += computeIdleAddition(acIdleAdd, lastAcAddUs, nowUs, engineConfiguration->acIdleExtraOffset, 2.0, engine->module<AcController>().unmock().acButtonState);
 
   // are we clamping open loop part separately? should not we clamp once we have total value?
 	return clampPercentValue(running);

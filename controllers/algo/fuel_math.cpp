@@ -115,6 +115,7 @@ float getRunningFuel(float baseFuel) {
 
 	float iatCorrection = engine->fuelComputer.running.intakeTemperatureCoefficient;
 	float cltCorrection = engine->fuelComputer.running.coolantTemperatureCoefficient;
+	float egtCorrection = engine->fuelComputer.running.fuelEGTCorrection;
 	float postCrankingFuelCorrection = engine->fuelComputer.running.postCrankingFuelCorrection;
 	float baroCorrection = engine->engineState.baroCorrection;
 
@@ -122,7 +123,7 @@ float getRunningFuel(float baseFuel) {
 	efiAssert(ObdCode::CUSTOM_ERR_ASSERT, !std::isnan(cltCorrection), "NaN cltCorrection", 0);
 	efiAssert(ObdCode::CUSTOM_ERR_ASSERT, !std::isnan(postCrankingFuelCorrection), "NaN postCrankingFuelCorrection", 0);
 
-	float correction = baroCorrection * iatCorrection * cltCorrection * postCrankingFuelCorrection;
+	float correction = baroCorrection * iatCorrection * cltCorrection * egtCorrection * postCrankingFuelCorrection;
 
 #if EFI_ANTILAG_SYSTEM
 	correction *= (1 + engine->antilagController.fuelALSCorrection / 100);
@@ -373,6 +374,15 @@ float getIatFuelCorrection() {
 		return 1; // this error should be already reported somewhere else, let's just handle it
 
 	return interpolate2d(iat.Value, config->iatFuelCorrBins, config->iatFuelCorr);
+}
+
+float getEGTFuelCorrection() {
+	const auto egt = Sensor::get(SensorType::EGT1);
+
+	if (!egt)
+		return 1; // this error should be already reported somewhere else, let's just handle it
+
+	return interpolate2d(egt.Value, config->egtFuelCorrBins, config->egtFuelCorr);
 }
 
 float getBaroCorrection() {

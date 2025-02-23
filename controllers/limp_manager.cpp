@@ -37,10 +37,11 @@ void LimpManager::onFastCallback() {
 }
 
 void LimpManager::updateRevLimit(float rpm) {
-	// User-configured hard RPM limit, either constant or CLT-lookup
-	m_revLimit = engineConfiguration->useCltBasedRpmLimit
-		? interpolate2d(Sensor::getOrZero(SensorType::Clt), config->cltRevLimitRpmBins, config->cltRevLimitRpm)
-		: (float)engineConfiguration->rpmHardLimit;
+	m_revLimit = std::min({
+		interpolate2d(Sensor::getOrZero(SensorType::Clt), config->cltRevLimitRpmBins, config->cltRevLimitRpm),
+		interpolate2d(Sensor::getOrZero(SensorType::OilTemperature), config->oilTempRevLimitRpmBins, config->oilTempRevLimitRpm),
+		static_cast<float>(engineConfiguration->rpmHardLimit)
+	});
 
 	// Require configurable rpm drop before resuming
 	resumeRpm = m_revLimit - engineConfiguration->rpmHardLimitHyst;

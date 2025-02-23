@@ -65,6 +65,7 @@ void startSwitchPins() {
 	startInputPinIfValid("clutch up switch", engineConfiguration->clutchUpPin, engineConfiguration->clutchUpPinMode);
 
 	startInputPinIfValid("brake pedal switch", engineConfiguration->brakePedalPin, engineConfiguration->brakePedalPinMode);
+	startInputPinIfValid("ETB pedal target map switch", engineConfiguration->etbPedalTargetPin, engineConfiguration->etbPedalTargetPinMode);
 	startInputPinIfValid("Launch Button", engineConfiguration->launchActivatePin, engineConfiguration->launchActivatePinMode);
 	startInputPinIfValid("Antilag Button", engineConfiguration->ALSActivatePin, engineConfiguration->ALSActivatePinMode);
 	startInputPinIfValid("Ignition Switch", engineConfiguration->ignitionKeyDigitalPin, engineConfiguration->ignitionKeyDigitalPinMode);
@@ -77,6 +78,7 @@ void stopSwitchPins() {
 	brain_pin_markUnused(activeConfiguration.clutchUpPin);
 	brain_pin_markUnused(activeConfiguration.clutchDownPin);
 	brain_pin_markUnused(activeConfiguration.brakePedalPin);
+	brain_pin_markUnused(activeConfiguration.etbPedalTargetPin);
 	brain_pin_markUnused(activeConfiguration.launchActivatePin);
 	brain_pin_markUnused(activeConfiguration.ALSActivatePin);
 	brain_pin_markUnused(activeConfiguration.ignitionKeyDigitalPin);

@@ -235,12 +235,21 @@ bool getBrakePedalState() {
 	return engine->engineState.lua.brakePedalState;
 }
 
+bool getEtbPedalTargetSwitchState() {
+#if EFI_GPIO_HARDWARE
+	if (isBrainPinValid(engineConfiguration->etbPedalTargetPin)) {
+		return engineConfiguration->etbPedalTargetPinInverted ^ efiReadPin(engineConfiguration->etbPedalTargetPin);
+	}
+#endif // EFI_GPIO_HARDWARE
+	return false;
+}
 
 void Engine::updateSwitchInputs() {
 	// this value is not used yet
-  engine->engineState.clutchDownState = getClutchDownState();
+	engine->engineState.clutchDownState = getClutchDownState();
 	engine->clutchUpSwitchedState.update(getClutchUpState());
 	engine->brakePedalSwitchedState.update(getBrakePedalState());
+	engine->etbPedalTargetSwitchedState.update(getEtbPedalTargetSwitchState());
 #if EFI_GPIO_HARDWARE
 	{
 		bool currentState;
@@ -268,6 +277,7 @@ extern bool kAcRequestState;
 Engine::Engine()
     : clutchUpSwitchedState(&engineState.clutchUpState),
 	brakePedalSwitchedState(&engineState.brakePedalState),
+	etbPedalTargetSwitchedState(&engineState.etbPedalTargetSwitchState),
 	acButtonSwitchedState(&module<AcController>().unmock().acButtonState)
 
 #if EFI_LAUNCH_CONTROL
@@ -275,7 +285,7 @@ Engine::Engine()
 	, softSparkLimiter(false), hardSparkLimiter(true)
 
 #if EFI_ANTILAG_SYSTEM
-//	, ALSsoftSparkLimiter(false)
+	, ALSsoftSparkLimiter(false)
 #endif /* EFI_ANTILAG_SYSTEM */
 
 #endif // EFI_LAUNCH_CONTROL

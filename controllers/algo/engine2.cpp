@@ -126,6 +126,8 @@ void EngineState::periodicFastCallback() {
 	engine->fuelComputer.running.intakeTemperatureCoefficient = getIatFuelCorrection();
 	// todo: move this into slow callback, no reason for CLT corr to be here
 	engine->fuelComputer.running.coolantTemperatureCoefficient = getCltFuelCorrection();
+	
+	engine->fuelComputer.running.fuelEGTCorrection = getEGTFuelCorrection();
 
 	engine->module<DfcoController>()->update();
 	// should be called before getInjectionMass() and getLimitingTimingRetard()

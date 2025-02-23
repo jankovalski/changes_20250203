@@ -30,8 +30,8 @@
 // todo: reset this between cranking attempts?! #2735
 float minCrankingRpm = 0;
 
-static Map3D<TRACTION_CONTROL_ETB_DROP_SIZE, TRACTION_CONTROL_ETB_DROP_SIZE, int8_t, uint16_t, uint8_t> tcTimingDropTable{"tct"};
-static Map3D<TRACTION_CONTROL_ETB_DROP_SIZE, TRACTION_CONTROL_ETB_DROP_SIZE, int8_t, uint16_t, uint8_t> tcSparkSkipTable{"tcs"};
+static Map3D<TRACTION_CONTROL_ETB_DROP_SIZE, TRACTION_CONTROL_ETB_DROP_SIZE, int16_t, uint8_t, uint16_t> tcTimingDropTable{"tct"};
+static Map3D<TRACTION_CONTROL_ETB_DROP_SIZE, TRACTION_CONTROL_ETB_DROP_SIZE, int16_t, uint8_t, uint16_t> tcSparkSkipTable{"tcs"};
 
 #if EFI_ENGINE_CONTROL && EFI_SHAFT_POSITION_INPUT
 
@@ -53,10 +53,8 @@ angle_t getRunningAdvance(float rpm, float engineLoad) {
 		config->ignitionRpmBins, rpm
 	);
 
-  float vehicleSpeed = Sensor::getOrZero(SensorType::VehicleSpeed);
-  float wheelSlip = Sensor::getOrZero(SensorType::WheelSlipRatio);
-  engine->ignitionState.tractionAdvanceDrop = tcTimingDropTable.getValue(wheelSlip, vehicleSpeed);
-  engine->engineState.tractionControlSparkSkip = tcSparkSkipTable.getValue(wheelSlip, vehicleSpeed);
+  engine->ignitionState.tractionAdvanceDrop = tcTimingDropTable.getValue(engine->outputChannels.TPSValue, engine->outputChannels.ascReduction);
+  engine->engineState.tractionControlSparkSkip = tcSparkSkipTable.getValue(engine->outputChannels.TPSValue, engine->outputChannels.ascReduction);
   engine->engineState.updateSparkSkip();
 
   advanceAngle += engine->ignitionState.tractionAdvanceDrop;
@@ -232,7 +230,7 @@ angle_t IgnitionState::getAdvance(float rpm, float engineLoad) {
 }
 
 angle_t IgnitionState::getWrappedAdvance(const float rpm, const float engineLoad) {
-    angle_t angle = getAdvance(rpm, engineLoad) * luaTimingMult + luaTimingAdd;
+    angle_t angle = getAdvance(rpm, engineLoad) * engine->outputChannels.egsTimingMultiplier * luaTimingMult + luaTimingAdd;
     wrapAngle(angle, "getWrappedAdvance", ObdCode::CUSTOM_ERR_ADCANCE_CALC_ANGLE);
     return angle;
 }
@@ -284,8 +282,8 @@ size_t getMultiSparkCount(float rpm) {
 }
 
 void initIgnitionAdvanceControl() {
-	tcTimingDropTable.initTable(engineConfiguration->tractionControlTimingDrop, engineConfiguration->tractionControlSlipBins, engineConfiguration->tractionControlSpeedBins);
-	tcSparkSkipTable.initTable(engineConfiguration->tractionControlIgnitionSkip, engineConfiguration->tractionControlSlipBins, engineConfiguration->tractionControlSpeedBins);
+	tcTimingDropTable.initTable(engineConfiguration->tractionControlTimingDrop, engineConfiguration->tractionControlSpeedBins, engineConfiguration->tractionControlSlipBins);
+	tcSparkSkipTable.initTable(engineConfiguration->tractionControlIgnitionSkip, engineConfiguration->tractionControlSpeedBins, engineConfiguration->tractionControlSlipBins);
 }
 
 /**
